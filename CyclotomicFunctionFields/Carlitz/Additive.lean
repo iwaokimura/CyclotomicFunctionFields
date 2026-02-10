@@ -70,8 +70,17 @@ theorem frobeniusPower_isAdditive.{u} (n : ℕ) : IsAdditive.{u} (frobeniusPower
   simp only [frobeniusPower, Polynomial.aeval_monomial]
   -- In characteristic p, (x + y)^(p^n) = x^(p^n) + y^(p^n)
   simp only [map_one, one_mul]
-  -- This follows from iterative application of Frobenius
-  sorry
+  -- This follows from iterative application of Frobenius.
+  -- Induction on n: base case n = 0 is trivial, step case uses (x + y)^p = x^p + y^p.
+  -- (x + y)^(q^(n+1)) = ((x + y)^(q^n))^q = (x^(q^n) + y^(q^n))^q = (x^(q^n))^q + (y^(q^n))^q = x^(q^(n+1)) + y^(q^(n+1))
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [pow_succ, ← pow_succ' q n, Nat.pow_succ q n]
+    simp only [add_pow_char_p (Fact.out q.Prime).charP K x y]
+    rw [ih, ih]
+
+
 
 /-- Structure theorem: Every additive polynomial is a linear combination of Frobenius powers -/
 theorem structure_theorem.{u} (P : Polynomial (Fq q)) (hP : IsAdditive.{u} P) :
