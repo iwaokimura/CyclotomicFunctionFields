@@ -16,7 +16,7 @@ import Mathlib.LinearAlgebra.Dimension.Finrank
 
 namespace CyclotomicFunctionFields
 
-variable {q : ℕ} [Fact (Nat.Prime q ∨ q = 1)]
+variable {q : ℕ} [Fact q.Prime]
 
 /-- The M-division points (M-torsion) of the Carlitz module -/
 def DivisionPoints (M : A q) (φ : CarlitzModule q) : Set (L q) :=
@@ -30,7 +30,7 @@ variable (M : A q) (φ : CarlitzModule q)
 theorem finite : (DivisionPoints M φ).Finite := sorry
 
 /-- The cardinality of Λ_M is q^(deg M) -/
-theorem card (hM : M ≠ 0) : 
+theorem card (hM : M ≠ 0) :
   Nat.card (DivisionPoints M φ) = q ^ Polynomial.natDegree M := sorry
 
 /-- Tower property: if M divides N, then Λ_M ⊆ Λ_N -/

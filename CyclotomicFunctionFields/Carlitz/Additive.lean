@@ -10,12 +10,12 @@ Reference: Hayes (1974), Section 1; Goss (1996), Chapter 1
 -/
 
 import CyclotomicFunctionFields.Prelude
-import Mathlib.Data.Polynomial.Derivative
+import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.FieldTheory.Separable
 
 namespace CyclotomicFunctionFields
 
-variable {q : ℕ} [Fact (Nat.Prime q ∨ q = 1)]
+variable {q : ℕ} [Fact q.Prime]
 
 /-- A polynomial P is additive if P(x+y) = P(x) + P(y) for all x, y -/
 def IsAdditive (P : Polynomial (Fq q)) : Prop :=
@@ -23,7 +23,7 @@ def IsAdditive (P : Polynomial (Fq q)) : Prop :=
     Polynomial.aeval x P + Polynomial.aeval y P = Polynomial.aeval (x + y) P
 
 /-- The n-th Frobenius power polynomial x^(q^n) -/
-def frobeniusPower (n : ℕ) : Polynomial (Fq q) :=
+noncomputable def frobeniusPower (n : ℕ) : Polynomial (Fq q) :=
   Polynomial.monomial (q ^ n) 1
 
 namespace IsAdditive
@@ -41,12 +41,12 @@ theorem comp {P Q : Polynomial (Fq q)} (hP : IsAdditive P) (hQ : IsAdditive Q) :
   IsAdditive (P.comp Q) := sorry
 
 /-- Frobenius power polynomials are additive -/
-theorem frobeniusPower_isAdditive (n : ℕ) : IsAdditive (frobeniusPower n) := sorry
+theorem frobeniusPower_isAdditive (n : ℕ) : IsAdditive (frobeniusPower (q := q) n) := sorry
 
 /-- Structure theorem: Every additive polynomial is a linear combination of Frobenius powers -/
 theorem structure_theorem (P : Polynomial (Fq q)) (hP : IsAdditive P) :
-  ∃ (n : ℕ) (coeffs : Fin n → Fq q),
-    P = Finset.sum (Finset.range n) (fun i => coeffs i • frobeniusPower i) := sorry
+  ∃ (n : ℕ) (coeffs : ℕ → Fq q),
+    P = Finset.sum (Finset.range n) (fun i => coeffs i • frobeniusPower (q := q) i) := sorry
 
 end IsAdditive
 
