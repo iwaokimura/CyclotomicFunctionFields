@@ -10,6 +10,7 @@ Reference: Hayes (1974), Section 1; Goss (1996), Chapter 1
 -/
 
 import CyclotomicFunctionFields.Prelude
+import Mathlib.Algebra.CharP.Lemmas
 import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.FieldTheory.Separable
 
@@ -67,18 +68,12 @@ theorem comp.{u} {P Q : Polynomial (Fq q)} (hP : IsAdditive.{u} P) (hQ : IsAddit
 /-- Frobenius power polynomials are additive -/
 theorem frobeniusPower_isAdditive.{u} (n : ℕ) : IsAdditive.{u} (frobeniusPower (q := q) n) := by
   intro K _ _ x y
-  simp only [frobeniusPower, Polynomial.aeval_monomial]
-  -- In characteristic p, (x + y)^(p^n) = x^(p^n) + y^(p^n)
-  simp only [map_one, one_mul]
-  -- This follows from iterative application of Frobenius.
-  -- Induction on n: base case n = 0 is trivial, step case uses (x + y)^p = x^p + y^p.
-  -- (x + y)^(q^(n+1)) = ((x + y)^(q^n))^q = (x^(q^n) + y^(q^n))^q = (x^(q^n))^q + (y^(q^n))^q = x^(q^(n+1)) + y^(q^(n+1))
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [pow_succ, ← pow_succ' q n, Nat.pow_succ q n]
-    simp only [add_pow_char_p (Fact.out q.Prime).charP K x y]
-    rw [ih, ih]
+  classical
+  haveI : CharP K q :=
+    charP_of_injective_algebraMap (algebraMap (Fq q) K).injective q
+  simpa [frobeniusPower, Polynomial.aeval_monomial, map_one, one_mul]
+    using
+      (add_pow_char_pow (R := K) (p := q) (x := x) (y := y) (n := n)).symm
 
 
 
