@@ -1,0 +1,22 @@
+# Lean build artifacts
+/.lake/
+/build/
+/lake-packages/
+
+# Lake manifest (can be regenerated)
+lake-manifest.json
+
+# Editor files
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
