@@ -2,8 +2,8 @@
 
 ## プロジェクトの概要
 
-このプロジェトは、Hayes の「有理関数体の明示的類体論」をLean4で形式化することを目的としています。
-特に、Carlitz加群の分岐点を用いた巡回函数体の理論に焦点を当てています。
+このプロジェトは，Hayes の「有理関数体の明示的類体論」をLean4で形式化することを目的としています．
+特に，Carlitz加群の分岐点を用いた円分関数体の理論に焦点を当てています．
 
 ## セットアップ手順
 
@@ -55,7 +55,7 @@ CyclotomicFunctionFields/
     │   ├── Basic.lean                  # Carlitz加群の定義
     │   ├── Additive.lean               # 加法的多項式
     │   ├── Torsion.lean                # 分岐点 Λ_M
-    │   └── Field.lean                  # 巡回函数体 K(Λ_M)
+    │   └── Field.lean                  # 円分関数体 K(Λ_M)
     ├── ClassField/
     │   └── Setup.lean                  # 将来のCFT接続
     └── Examples.lean                   # 明示的な計算例
@@ -65,28 +65,30 @@ CyclotomicFunctionFields/
 
 ### Carlitz加群
 
-Carlitz加群は生成元 t への作用によって定義されます：
-
-φ_t(x) = tx + x^q
-
-ここで x^q はFrobenius写像です。
+Carlitz加群は生成元 $t$ への作用によって定義されます：
+$$
+\varphi_t(x) = tx + x^q
+$$
+ここで $x^q$ はFrobenius写像です．
 
 ### 分岐点（torsion points）
 
-M ∈ A に対して、M-分岐点は以下で定義されます：
+$M \in A$ に対して，$M$-分岐点は以下で定義されます：
 
-Λ_M = {x ∈ L : φ_M(x) = 0}
+$$
+\Lambda_M = \{x \in L : \varphi_M(x) = 0\}
+$$
 
 主要な性質：
-- |Λ_M| = q^(deg M)
-- Λ_M ≅ A/M （A-加群として）
-- タワー性質: M | N ⟹ Λ_M ⊆ Λ_N
+- $|\Lambda_M| = q^{\deg M}$
+- $\Lambda_M \cong A/M$ （$A$-加群として）
+- タワー性質: $M \mid N \implies \Lambda_M \subseteq \Lambda_N$
 
 ### Hayesの主定理
 
-K = 𝔽_q(t) の任意の有限アーベル拡大は、ある K(Λ_M) に含まれる。
+$K = \mathbb{F}_q(t)$ の任意の有限アーベル拡大は，ある $K(\Lambda_M)$ に含まれる．
 
-これは函数体に対するKronecker-Weber定理の類似です。
+これは関数体に対するKronecker-Weber定理の類似です．
 
 ## 開発ワークフロー
 
@@ -150,7 +152,7 @@ K = 𝔽_q(t) の任意の有限アーベル拡大は、ある K(Λ_M) に含ま
 
 ## ライセンス
 
-MIT License - 詳細は LICENSE ファイルを参照してください。
+MIT License - 詳細は LICENSE ファイルを参照してください．
 
 ---
 
