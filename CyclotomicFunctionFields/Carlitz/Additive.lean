@@ -232,19 +232,11 @@ lemma coeff_zero_of_not_q_power {P : Polynomial (Fq q)} (hP : IsAdditive.{0} P)
   let coeff_K : K := algebraMap (Fq q) K (P.coeff n)
 
   -- Step 2: Binomial coefficient is nonzero in K
+  -- The map ℕ → K factors as ℕ → ZMod q → K (via CharP K q),
+  -- so (m : K) = 0 ↔ q ∣ m ↔ (m : ZMod q) = 0.
   have binom_ne_zero_K : (n.choose k : K) ≠ 0 := by
-    intro h_zero
-    -- K has characteristic q, so natural numbers map via ℕ → ZMod q → K
-    -- If (n.choose k : K) = 0, then q | n.choose k
-    -- This means (n.choose k : ZMod q) = 0
-    have char_q : CharP K q := inferInstance
-    -- The map ℕ → K factors as ℕ → ZMod q → K
-    have : (n.choose k : ZMod q) = 0 := by
-      -- Since CharP K q, we have (n : K) = 0 iff q | n
-      -- For binomial coefficients, (n.choose k : K) = 0 in char q
-      -- means (n.choose k : ZMod q) = 0
-      sorry -- Technical: requires showing that cast commutes
-    exact hbinom this
+    rw [Ne, CharP.cast_eq_zero_iff K q, ← ZMod.natCast_eq_zero_iff]
+    exact hbinom
 
   -- Step 3: From the functional equation, extract that P.coeff n · binomial(n,k) = 0
   have key : coeff_K * (n.choose k : K) = 0 := by
@@ -282,10 +274,9 @@ lemma coeff_zero_of_not_q_power {P : Polynomial (Fq q)} (hP : IsAdditive.{0} P)
     have := mul_eq_zero.mp key
     exact this.resolve_right binom_ne_zero_K
 
-  -- Since algebraMap (Fq q) K is injective, P.coeff n = 0 in Fq q
-  -- coeff_K = algebraMap (Fq q) K (P.coeff n) = 0
-  -- so by injectivity, P.coeff n = 0
-  sorry -- Requires injectivity of algebraMap (Fq q) K
+  -- Since algebraMap (Fq q) K is a field homomorphism, it is injective.
+  -- coeff_K = algebraMap (Fq q) K (P.coeff n) = 0 implies P.coeff n = 0.
+  exact (algebraMap (Fq q) K).injective (coeff_K_zero.trans (map_zero _).symm)
 
 -- Helper lemma (planned): support is contained in q-power exponents.
 lemma support_subset_q_powers {P : Polynomial (Fq q)} (hP : IsAdditive.{0} P) :
@@ -307,42 +298,71 @@ end CyclotomicFunctionFields
 /-
 ## Proof Status and Remaining Work
 
-The proof of `coeff_zero_of_not_q_power` is now substantially complete with a clear
-mathematical argument. The remaining `sorry`s are technical details:
+### ✅ Completed
 
-### 1. `exists_binomial_ne_zero_of_not_prime_power` - Lucas's Theorem variant
-   - **Goal**: For n not a p-power, find k with 0 < k < n and C(n,k) ≢ 0 (mod p)
-   - **Strategy**: Use base-p expansion and Lucas's theorem
-   - **Construction**: If n = Σᵢ nᵢ p^i with at least two nonzero digits,
-     take k = p^j where j is the smallest index with nⱼ > 0
-   - **Required**: Lucas's theorem from Mathlib or prove it separately
-   - **Status**: Mathematical argument complete, needs Lean formalization
+#### `Infinite (RatFunc (Fq q))`
+   - **Proved via**: `Infinite.of_injective (algebraMap (A q) K) (IsFractionRing.injective (A q) K)`
+   - `Polynomial (Fq q)` is infinite, and the fraction ring embedding is injective.
 
-### 2. `binom_ne_zero_K` - Characteristic preserves binomial nonvanishing
-   - **Goal**: Show (n.choose k : ZMod q) ≠ 0 implies (n.choose k : K) ≠ 0
-   - **Strategy**: Use CharP K q and properties of characteristic
-   - **Required**: Lemmas about Nat.cast and CharP
-   - **Status**: Nearly complete, needs one technical lemma about cast composition
+#### `exists_binomial_ne_zero_of_not_prime_power` - FULLY PROVED
+   The following sub-goals were all closed:
+   - **∃ j, p^j ≤ n < p^(j+1)**: via `Nat.log p n` using
+     `Nat.pow_log_le_self` and `Nat.lt_pow_succ_log_self`
+   - **n > p^j**: by contradiction—`n = p^j` would contradict `¬ ∃ i, n = p^i`
+   - **0 < p^j**: by `pow_pos hp.out.pos j`
+   - **C(n, p^j) ≠ 0 in ZMod p**: proved via `choose_prime_pow_cast_eq_div`
+     plus `ZMod.natCast_eq_zero_iff`
 
-### 3. `key` - Bivariate coefficient extraction
-   - **Goal**: Extract that (P.coeff n) * C(n,k) = 0 from P(x+y) = P(x) + P(y)
-   - **Strategy**: Treat as polynomial identity in K[X,Y] and compare coefficients
-   - **Two approaches**:
-     a) Use `Polynomial (Polynomial K)` for bivariate polynomials
-     b) Use `MvPolynomial (Fin 2) K` for cleaner multivariate reasoning
-   - **Required**: Binomial expansion lemmas and coefficient extraction
-   - **Status**: Mathematical argument complete, needs significant formalization
+#### `choose_prime_pow_cast_eq_div` (new private theorem)
+   - **Statement**: If `p^j ≤ n < p^(j+1)` then
+     `(n.choose (p^j) : ZMod p) = ((n / p^j : ℕ) : ZMod p)`
+   - **Proved by**: induction on j using
+     `Choose.choose_modEq_choose_mod_mul_choose_div_nat` (one-step Lucas recurrence),
+     `Nat.div_div_eq_div_mul`, `Nat.le_div_iff_mul_le`, `Nat.div_lt_of_lt_mul`
 
-### Suggested next steps:
-1. Prove or import Lucas's theorem for binomial coefficients modulo primes
-2. Add helper lemmas for binomial expansion in polynomials
-3. Complete the bivariate coefficient comparison using MvPolynomial or
-   formal power series techniques
-4. Alternative: Look for existing Mathlib lemmas about additive polynomials
+#### `binom_ne_zero_K` — PROVED
+   - **Goal**: `(n.choose k : ZMod q) ≠ 0 → (n.choose k : K) ≠ 0`
+   - **Proof**:
+     ```lean
+     rw [Ne, CharP.cast_eq_zero_iff K q, ← ZMod.natCast_eq_zero_iff]
+     exact hbinom
+     ```
+   - `CharP K q` gives `(m : K) = 0 ↔ q ∣ m`, and
+     `ZMod.natCast_eq_zero_iff` gives `(m : ZMod q) = 0 ↔ q ∣ m`.
 
-### Alternative approaches to consider:
-- Use derivative-based argument: if P is additive and deg P = n, then
-  P'(x) relates to P in a specific way that forces n to be a q-power
-- Use the Frobenius endomorphism properties more directly
-- Appeal to structure theory if it exists in Mathlib
+#### `algebraMap` injectivity — PROVED
+   - **Goal**: From `coeff_K = 0` (where `coeff_K = algebraMap (Fq q) K (P.coeff n)`)
+     conclude `P.coeff n = 0`
+   - **Proof**:
+     ```lean
+     exact (algebraMap (Fq q) K).injective (coeff_K_zero.trans (map_zero _).symm)
+     ```
+   - A field homomorphism is always injective (`RingHom.injective`).
+
+---
+
+### ❌ Remaining `sorry`: `key` in `coeff_zero_of_not_q_power`
+
+   - **Goal**: `coeff_K * (n.choose k : K) = 0`, i.e.,
+     derive `(P.coeff n) * C(n,k) = 0` from
+     `∀ x y : K, P(x) + P(y) = P(x+y)` with `0 < k < n`
+   - **Strategy**: Lift the pointwise identity to a polynomial identity in `K[X,Y]`
+     (valid since K is infinite), then compare coefficients of `X^k · Y^(n-k)`:
+     - In `P(X+Y)` via binomial theorem: coefficient is `(P.coeff n) * C(n,k)`
+     - In `P(X) + P(Y)`: coefficient is 0 (since 0 < k < n means neither pure X nor pure Y term)
+   - **Recommended approach**: Use `MvPolynomial (Fin 2) K` with
+     `MvPolynomial.funext` (polynomial equality from pointwise equality over
+     an infinite ring), then extract the `Finsupp.single` coefficient.
+   - **Note**: Once `key` is proved, `coeff_zero_of_not_q_power` is fully closed
+     (Steps 4 and the final `algebraMap` injectivity are already proved).
+
+---
+
+### ❌ Remaining `sorry`: `structure_theorem`
+   - **Goal**: Every additive polynomial is `Σᵢ aᵢ · x^(qⁱ)`
+   - **Strategy**: `support_subset_q_powers` (already proved via
+     `coeff_zero_of_not_q_power`) shows every nonzero coefficient index is a q-power.
+     Use `Polynomial.as_sum_support` to decompose P as `Σ_{n ∈ P.support} P.coeff n • X^n`,
+     then reindex over q-power exponents.
+   - **Status**: Unblocked once `key` is resolved.
 -/
