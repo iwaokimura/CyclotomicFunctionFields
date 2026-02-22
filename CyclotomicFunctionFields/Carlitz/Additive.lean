@@ -14,7 +14,9 @@ import Mathlib.Algebra.CharP.Lemmas
 import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.FieldTheory.Separable
 import Mathlib.Data.Nat.Choose.Basic
+import Mathlib.Data.Nat.Choose.Lucas
 import Mathlib.RingTheory.Polynomial.Basic
+
 
 namespace CyclotomicFunctionFields
 
@@ -88,6 +90,40 @@ theorem constant_term_zero {P : Polynomial (Fq q)} (hP : IsAdditive.{0} P) :
   have h := hP (K := Fq q) (x := 0) (y := 0)
   simpa [Polynomial.aeval_def, Polynomial.eval₂_at_zero, map_zero, zero_add] using h
 
+/-- For a prime p, if p^j ≤ n < p^(j+1), then n.choose(p^j) ≡ n/p^j in ZMod p.  -/
+private theorem choose_prime_pow_cast_eq_div {p : ℕ} [hp : Fact p.Prime]
+    (j n : ℕ) (hlo : p ^ j ≤ n) (hhi : n < p ^ (j + 1)) :
+    (n.choose (p ^ j) : ZMod p) = ((n / p ^ j : ℕ) : ZMod p) := by
+  induction j generalizing n with
+  | zero => simp [Nat.choose_one_right]
+  | succ j ih =>
+    -- Recurrence: n.choose(p^(j+1)) ≡ (n/p).choose(p^j) [MOD p]
+    -- because p^(j+1) % p = 0 and p^(j+1) / p = p^j
+    have h_step : n.choose (p ^ (j + 1)) ≡ (n / p).choose (p ^ j) [MOD p] := by
+      have h : n.choose (p ^ (j + 1)) ≡
+          (n % p).choose (p ^ (j + 1) % p) * (n / p).choose (p ^ (j + 1) / p) [MOD p] :=
+        Choose.choose_modEq_choose_mod_mul_choose_div_nat
+      rw [show p ^ (j + 1) % p = 0 from by rw [pow_succ]; exact Nat.mul_mod_left _ p,
+          show p ^ (j + 1) / p = p ^ j from by
+            rw [pow_succ]; exact Nat.mul_div_cancel _ hp.out.pos,
+          Nat.choose_zero_right, one_mul] at h
+      exact h
+    -- Cast the recurrence to ZMod p and apply induction hypothesis
+    have heq : (n.choose (p ^ (j + 1)) : ZMod p) = ((n / p).choose (p ^ j) : ZMod p) :=
+      (ZMod.natCast_eq_natCast_iff _ _ _).mpr h_step
+    -- Establish bounds for n/p
+    have hlo' : p ^ j ≤ n / p :=
+      (Nat.le_div_iff_mul_le hp.out.pos).mpr (pow_succ p j ▸ hlo)
+    have hhi' : n / p < p ^ (j + 1) :=
+      Nat.div_lt_of_lt_mul (by
+        calc n < p ^ (j + 1 + 1) := hhi
+             _ = p ^ (j + 1) * p := pow_succ p (j + 1)
+             _ = p * p ^ (j + 1) := mul_comm _ _)
+    -- Combine: n/p/p^j = n/p^(j+1)
+    have hdiv : n / p / p ^ j = n / p ^ (j + 1) := by
+      rw [Nat.div_div_eq_div_mul, mul_comm, ← pow_succ]
+    rw [heq, ih (n / p) hlo' hhi', hdiv]
+
 -- Helper: Lucas's theorem tells us when binomial(n, k) is nonzero mod p.
 -- For n not a p-power, there exists k with 0 < k < n and binomial(n, k) ≢ 0 (mod p).
 private lemma exists_binomial_ne_zero_of_not_prime_power
@@ -114,21 +150,30 @@ private lemma exists_binomial_ne_zero_of_not_prime_power
   -- Also 0 < p^j = k < n since n has a nonzero digit at position i > j.
 
   -- Find the smallest position with nonzero digit
-  have ⟨j, hj⟩ : ∃ j, n ≥ p ^ j ∧ n < p ^ (j + 1) := by
-    sorry -- Exists by properties of base-p representation
+  -- j = ⌊log_p n⌋ satisfies p^j ≤ n < p^(j+1)
+  have ⟨j, hj⟩ : ∃ j, n ≥ p ^ j ∧ n < p ^ (j + 1) :=
+    ⟨Nat.log p n, Nat.pow_log_le_self p hn_pos.ne', Nat.lt_pow_succ_log_self hp.out.one_lt n⟩
 
   -- Since n is not a p-power and n ≥ p^j, we have n > p^j
-  have hn_gt : n > p ^ j := by
-    sorry -- n = p^j would contradict ¬∃ i, n = p^i
+  have hn_gt : n > p ^ j :=
+    lt_of_le_of_ne hj.1 (fun h => hn ⟨j, h.symm⟩)
 
   use p ^ j
   constructor
   · -- p^j > 0 since p > 0 and j ≥ 0
-    sorry -- Prove p^j > 0
+    exact pow_pos hp.out.pos j
   constructor
   · exact hn_gt
   · -- Show binomial(n, p^j) ≠ 0 in ZMod p using Lucas's theorem
-    sorry -- Requires Lucas's theorem from Mathlib and digit extraction
+    -- By choose_prime_pow_cast_eq_div: (n.choose(p^j) : ZMod p) = (n/p^j : ZMod p)
+    rw [choose_prime_pow_cast_eq_div j n (le_of_lt hn_gt) hj.2]
+    -- n/p^j is between 1 and p-1, hence nonzero in ZMod p
+    have h_pos : 0 < n / p ^ j :=
+      Nat.div_pos (le_of_lt hn_gt) (pow_pos hp.out.pos j)
+    have h_lt : n / p ^ j < p := Nat.div_lt_of_lt_mul (by
+      have h := hj.2; rw [pow_succ] at h; exact h)
+    exact fun h => absurd (Nat.le_of_dvd h_pos ((ZMod.natCast_eq_zero_iff _ _).mp h))
+      (not_le.mpr h_lt)
 
 -- Helper lemma (planned): non-q-power coefficients vanish for additive polynomials.
 lemma coeff_zero_of_not_q_power {P : Polynomial (Fq q)} (hP : IsAdditive.{0} P)
@@ -149,8 +194,8 @@ lemma coeff_zero_of_not_q_power {P : Polynomial (Fq q)} (hP : IsAdditive.{0} P)
   -- Work over K = RatFunc (Fq q), an infinite field of characteristic q
   let K := RatFunc (Fq q)
   haveI : CharP K q := inferInstance
-  haveI : Infinite K := by
-    sorry -- RatFunc is infinite (should be in Mathlib)
+  haveI : Infinite K :=
+    Infinite.of_injective (algebraMap (A q) K) (IsFractionRing.injective (A q) K)
 
   -- The functional equation holds for all x, y in K
   have hxy : ∀ x y : K,
