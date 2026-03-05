@@ -27,6 +27,14 @@ jobs:
       - name: Install Python dependencies
         run: uv sync
 
+      - name: Debug paths
+        working-directory: blueprint/src
+        run: |
+          echo "CWD: $(pwd)"
+          ls -la
+          ls -la macros/
+          uv run python -c "import os; print('uv CWD:', os.getcwd())"
+
       - name: Build blueprint
         working-directory: blueprint/src
         run: uv run plastex -c plastex.cfg web.tex
