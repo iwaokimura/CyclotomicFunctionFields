@@ -29,6 +29,8 @@ jobs:
 
       - name: Build blueprint
         working-directory: blueprint/src
+        env:
+          TEXINPUTS: ".:./macros:"
         run: |
           rm -f web.paux
           uv run plastex -c plastex.cfg web.tex
