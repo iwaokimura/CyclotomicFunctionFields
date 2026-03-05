@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - issue-1-blueprint
+  workflow_dispatch:
 
 # Allow one concurrent deployment
 concurrency:
