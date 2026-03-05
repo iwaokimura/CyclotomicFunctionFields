@@ -27,6 +27,19 @@ jobs:
       - name: Install Python dependencies
         run: uv sync
 
+      - name: Debug kpsewhich
+        run: |
+          cd "$GITHUB_WORKSPACE/blueprint/src"
+          echo "=== kpsewhich location ==="
+          which kpsewhich || echo "kpsewhich not found"
+          echo "=== searching macros/common ==="
+          kpsewhich macros/common || true
+          echo "=== searching with TEXINPUTS ==="
+          TEXINPUTS=".:./macros:" kpsewhich macros/common || true
+          TEXINPUTS=".:./macros:" kpsewhich common || true
+          echo "=== python os.path check ==="
+          python3 -c "import os; print(os.getcwd()); print(os.path.isfile('macros/common.tex')); print(os.listdir('macros'))"
+
       - name: Build blueprint
         run: |
           cd "$GITHUB_WORKSPACE/blueprint/src"
