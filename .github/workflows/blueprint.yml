@@ -27,7 +27,8 @@ jobs:
         run: uv sync
 
       - name: Build blueprint
-        run: uv run leanblueprint web
+        working-directory: blueprint/src
+        run: uv run plastex -c plastex.cfg web.tex
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
