@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - issue-1-blueprint
 
 # Allow one concurrent deployment
 concurrency:
