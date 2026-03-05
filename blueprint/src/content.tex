@@ -1,0 +1,214 @@
+% In this file you should put the actual content of the blueprint.
+% It will be used both by the web and the print version.
+% It should *not* include the \begin{document}
+
+\chapter{Additive Polynomials}
+\label{chap:additive}
+
+Throughout this chapter, $q$ is a prime power and $\Fq$ denotes the finite field
+with $q$ elements.
+We write $\A = \Fq[t]$ for the polynomial ring and $\K = \Fq(t)$ for the rational
+function field.
+
+The key players in the theory of cyclotomic function fields are the
+\emph{additive polynomials}: polynomials $P \in \Fq[x]$ satisfying
+$P(x+y) = P(x) + P(y)$.
+Their structure theorem — every additive polynomial is a $\Fq$-linear combination
+of Frobenius powers $x^{q^i}$ — is the algebraic foundation of the Carlitz module.
+
+References: Hayes~\cite{hayes1974} Section~1; Goss~\cite{goss1996} Chapter~1.
+
+%% -----------------------------------------------------------------------
+\section{Definitions}
+\label{sec:additive_defs}
+
+\begin{definition}[Additive polynomial]
+  \label{def:is_additive}
+  \lean{CyclotomicFunctionFields.IsAdditive}
+  \leanok
+  A polynomial $P \in \Fq[x]$ is \emph{additive} if
+  \[
+    P(x + y) = P(x) + P(y)
+  \]
+  for all $x, y$ in every $\Fq$-algebra $K$.
+  More precisely, for every field extension $K/\Fq$ and all $x, y \in K$,
+  \[
+    \mathrm{aeval}(x, P) + \mathrm{aeval}(y, P) = \mathrm{aeval}(x+y, P).
+  \]
+\end{definition}
+
+\begin{definition}[Frobenius power polynomial]
+  \label{def:frobenius_power}
+  \lean{CyclotomicFunctionFields.frobeniusPower}
+  \leanok
+  For $n \geq 0$, the \emph{$n$-th Frobenius power polynomial} is
+  \[
+    \frob^n := x^{q^n} \;\in\; \Fq[x].
+  \]
+  In Lean this is \texttt{frobeniusPower n}, defined as
+  \texttt{Polynomial.monomial (q\^{}n) 1}.
+\end{definition}
+
+%% -----------------------------------------------------------------------
+\section{Basic closure properties}
+\label{sec:additive_closure}
+
+\begin{proposition}[Sum of additive polynomials is additive]
+  \label{prop:additive_add}
+  \lean{CyclotomicFunctionFields.IsAdditive.add}
+  \leanok
+  \uses{def:is_additive}
+  If $P$ and $Q$ are additive, then so is $P + Q$.
+\end{proposition}
+
+\begin{proof}
+  \leanok
+  Direct computation:
+  \begin{align*}
+    (P+Q)(x+y) &= P(x+y) + Q(x+y) \\
+               &= (P(x)+P(y)) + (Q(x)+Q(y)) \\
+               &= (P(x)+Q(x)) + (P(y)+Q(y)) \\
+               &= (P+Q)(x) + (P+Q)(y). \qedhere
+  \end{align*}
+\end{proof}
+
+\begin{proposition}[Scalar multiple of an additive polynomial is additive]
+  \label{prop:additive_smul}
+  \lean{CyclotomicFunctionFields.IsAdditive.smul}
+  \leanok
+  \uses{def:is_additive}
+  If $P$ is additive and $a \in \Fq$, then $a \cdot P$ is additive.
+\end{proposition}
+
+\begin{proof}
+  \leanok
+  $(aP)(x+y) = a \cdot P(x+y) = a(P(x)+P(y)) = (aP)(x) + (aP)(y)$.
+\end{proof}
+
+\begin{proposition}[Composition of additive polynomials is additive]
+  \label{prop:additive_comp}
+  \lean{CyclotomicFunctionFields.IsAdditive.comp}
+  \leanok
+  \uses{def:is_additive}
+  If $P$ and $Q$ are additive, then so is $P \circ Q$.
+\end{proposition}
+
+\begin{proof}
+  \leanok
+  $(P \circ Q)(x + y) = P(Q(x+y)) = P(Q(x)+Q(y)) = P(Q(x)) + P(Q(y))$,
+  using additivity of $Q$ then $P$.
+\end{proof}
+
+%% -----------------------------------------------------------------------
+\section{Frobenius powers are additive}
+\label{sec:frobenius_additive}
+
+\begin{proposition}[Frobenius powers are additive]
+  \label{prop:frobenius_power_additive}
+  \lean{CyclotomicFunctionFields.IsAdditive.frobeniusPower_isAdditive}
+  \leanok
+  \uses{def:is_additive, def:frobenius_power}
+  For every $n \geq 0$, the polynomial $x^{q^n}$ is additive.
+\end{proposition}
+
+\begin{proof}
+  \leanok
+  In a field $K$ of characteristic $p$ with $q = p^r$, the Frobenius map
+  $x \mapsto x^q$ is a ring homomorphism, so it is additive.
+  Iterating, $x \mapsto x^{q^n}$ is also additive:
+  \[
+    (x + y)^{q^n} = x^{q^n} + y^{q^n}.
+  \]
+  In Lean this follows from \texttt{add\_pow\_char\_pow}.
+\end{proof}
+
+%% -----------------------------------------------------------------------
+\section{Structure of additive polynomials}
+\label{sec:additive_structure}
+
+We now work towards the main structure theorem.
+The key step is showing that the coefficient $[x^n]P$ vanishes whenever
+$n$ is not a power of $q$.
+
+\begin{lemma}[Constant term of an additive polynomial is zero]
+  \label{lem:additive_constant_zero}
+  \lean{CyclotomicFunctionFields.IsAdditive.constant_term_zero}
+  \leanok
+  \uses{def:is_additive}
+  If $P$ is additive, then $P(0) = 0$, i.e.\ the constant coefficient of $P$ is $0$.
+\end{lemma}
+
+\begin{proof}
+  \leanok
+  Setting $x = y = 0$ in $P(x+y) = P(x)+P(y)$ gives $P(0) = 2P(0)$,
+  hence $P(0) = 0$.
+  In Lean, evaluate over $\Fq$ itself and simplify.
+\end{proof}
+
+\begin{lemma}[Non-$q$-power coefficients vanish]
+  \label{lem:coeff_zero_not_q_power}
+  \lean{CyclotomicFunctionFields.IsAdditive.coeff_zero_of_not_q_power}
+  \uses{def:is_additive, lem:additive_constant_zero}
+  Let $P$ be additive and let $n \geq 1$ be a positive integer that is
+  \emph{not} a power of $q$.  Then $[x^n]P = 0$.
+\end{lemma}
+
+\begin{proof}
+  Since $n$ is not a power of $q = p^r$, and in particular not a power of the
+  characteristic $p$, by Lucas's theorem there exists an integer $k$ with
+  $0 < k < n$ such that $\binom{n}{k} \not\equiv 0 \pmod{p}$.
+
+  Working over the infinite field $K = \Fq(t)$ (which has characteristic $q$),
+  the functional equation $P(X+Y) = P(X)+P(Y)$ holds for all $X, Y \in K$.
+  Lifting this to an identity of polynomials in $K[X,Y]$ (valid because $K$ is
+  infinite) and comparing coefficients of $X^k Y^{n-k}$:
+  \begin{itemize}
+    \item the right-hand side contributes $0$ (no mixed term in $P(X)+P(Y)$
+          since $0 < k < n$);
+    \item the left-hand side contributes $[x^n]P \cdot \binom{n}{k}$ via the
+          binomial theorem.
+  \end{itemize}
+  Hence $[x^n]P \cdot \binom{n}{k} = 0$ in $K$.
+  Since $\binom{n}{k} \neq 0$ in $K$ and $K$ is a field, $[x^n]P = 0$.
+
+  \begin{remark}
+    The step ``lift pointwise identity to polynomial identity'' uses
+    \texttt{MvPolynomial.funext} (polynomial equality from pointwise equality
+    over an infinite ring).  This step is the remaining \texttt{sorry} in the
+    Lean proof.
+  \end{remark}
+\end{proof}
+
+\begin{lemma}[Support contained in $q$-power exponents]
+  \label{lem:support_q_powers}
+  \lean{CyclotomicFunctionFields.IsAdditive.support_subset_q_powers}
+  \leanok
+  \uses{lem:coeff_zero_not_q_power}
+  If $P$ is additive, then every $n \in \supp(P)$ is a power of $q$.
+\end{lemma}
+
+\begin{proof}
+  \leanok
+  Immediate from Lemma~\ref{lem:coeff_zero_not_q_power}: if $n \in \supp(P)$
+  then $[x^n]P \neq 0$, so $n$ must be a power of $q$.
+\end{proof}
+
+\begin{theorem}[Structure theorem for additive polynomials]
+  \label{thm:additive_structure}
+  \lean{CyclotomicFunctionFields.IsAdditive.structure_theorem}
+  \uses{lem:support_q_powers, def:frobenius_power}
+  Every additive polynomial $P \in \Fq[x]$ can be written uniquely as
+  \[
+    P = \sum_{i=0}^{N} a_i \, x^{q^i}
+  \]
+  for some $N \geq 0$ and coefficients $a_i \in \Fq$.
+  In other words, $P$ is an $\Fq$-linear combination of Frobenius power polynomials.
+\end{theorem}
+
+\begin{proof}
+  By Lemma~\ref{lem:support_q_powers}, the support of $P$ is contained in
+  $\{q^0, q^1, q^2, \ldots\}$.
+  Writing $P = \sum_{n \in \supp(P)} [x^n]P \cdot x^n$ and reindexing over
+  $q$-power exponents yields the desired form.
+  (Uniqueness is clear from the linear independence of monomials.)
+\end{proof}
