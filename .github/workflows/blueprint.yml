@@ -19,8 +19,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install graphviz
-        run: sudo apt-get install -y graphviz libgraphviz-dev
+      - name: Install graphviz and TeX infrastructure
+        run: sudo apt-get install -y graphviz libgraphviz-dev texlive-base
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
