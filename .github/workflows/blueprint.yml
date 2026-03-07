@@ -26,6 +26,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Restore Lake build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .lake/build
+          key: lake-build-${{ runner.os }}-${{ hashFiles('lake-manifest.json') }}
+          restore-keys: lake-build-${{ runner.os }}-
+
       - name: Build and lint the project
         uses: leanprover/lean-action@v1
 
@@ -34,3 +41,10 @@ jobs:
         with:
           blueprint: true
           build-page: false
+
+      - name: Save Lake build cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .lake/build
+          key: lake-build-${{ runner.os }}-${{ hashFiles('lake-manifest.json') }}
