@@ -40,6 +40,7 @@ jobs:
         uses: leanprover-community/docgen-action@main
         with:
           blueprint: true
+          references: blueprint/src/references.bib
 
       - name: Save Lake build cache
         uses: actions/cache/save@v4
