@@ -235,8 +235,9 @@ lemma coeff_zero_of_not_q_power {P : Polynomial (Fq q)} (hP : IsAdditive.{0} P)
   -- The map ℕ → K factors as ℕ → ZMod q → K (via CharP K q),
   -- so (m : K) = 0 ↔ q ∣ m ↔ (m : ZMod q) = 0.
   have binom_ne_zero_K : (n.choose k : K) ≠ 0 := by
-    rw [Ne, CharP.cast_eq_zero_iff K q, ← ZMod.natCast_eq_zero_iff]
-    exact hbinom
+    intro h
+    apply hbinom
+    rwa [CharP.cast_eq_zero_iff (ZMod q) q, ← CharP.cast_eq_zero_iff K q]
 
   -- Step 3: From the functional equation, extract that P.coeff n · binomial(n,k) = 0
   have key : coeff_K * (n.choose k : K) = 0 := by
