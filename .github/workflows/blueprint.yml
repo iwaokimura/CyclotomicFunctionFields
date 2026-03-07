@@ -34,13 +34,37 @@ jobs:
           rm -f web.paux
           "$GITHUB_WORKSPACE/.venv/bin/plastex" -c plastex.cfg web.tex
 
-      - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload blueprint artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: blueprint-web
           path: blueprint/web
 
+  build_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+      - name: Get mathlib cache
+        run: lake exe cache get
+
+      - name: Build Lean docs
+        run: lake -R -Kenv=dev docs
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-docs
+          path: .lake/build/doc
+
   deploy:
-    needs: build_blueprint
+    needs: [build_blueprint, build_docs]
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -49,6 +73,23 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Download blueprint
+        uses: actions/download-artifact@v4
+        with:
+          name: blueprint-web
+          path: _site
+
+      - name: Download Lean docs
+        uses: actions/download-artifact@v4
+        with:
+          name: lean-docs
+          path: _site/docs
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
