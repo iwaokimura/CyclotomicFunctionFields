@@ -41,6 +41,30 @@ jobs:
         with:
           blueprint: true
           references: blueprint/src/references.bib
+          deploy: false
+
+      - name: Add root index.html
+        run: |
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; URL=blueprint/">
+            <title>CyclotomicFunctionFields</title>
+          </head>
+          <body><p>Redirecting to <a href="blueprint/">Blueprint</a>…</p></body>
+          </html>
+          EOF
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Save Lake build cache
         uses: actions/cache/save@v4
