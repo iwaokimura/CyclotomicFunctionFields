@@ -44,3 +44,6 @@ __pycache__/
 *.alg
 *.ist
 blueprint/src/*.pdf
+
+# Private reference materials
+refs/
