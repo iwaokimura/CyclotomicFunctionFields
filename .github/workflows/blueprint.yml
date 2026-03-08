@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - fix/issue-10-restore-api-docs
   workflow_dispatch:
 
 # Allow one concurrent deployment
@@ -36,40 +37,18 @@ jobs:
       - name: Build and lint the project
         uses: leanprover/lean-action@v1
 
-      - name: Build blueprint
-        uses: xu-cheng/texlive-action@v2
+      - name: Create root redirect page
+        run: |
+          mkdir -p docs
+          printf '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta http-equiv="refresh" content="0; URL=blueprint/">\n  <title>CyclotomicFunctionFields</title>\n</head>\n<body><p>Redirecting to <a href="blueprint/">Blueprint</a></p></body>\n</html>\n' > docs/index.html
+
+      - name: Build documentation and blueprint
+        uses: leanprover-community/docgen-action@7836f3de2f10facc0fed09c1309e6402e4cd5fd0
         with:
-          docker_image: ghcr.io/xu-cheng/texlive-full:20250401
-          run: |
-            apk update
-            apk add --update make py3-pip git pkgconfig graphviz graphviz-dev gcc musl-dev
-            git config --global --add safe.directory $GITHUB_WORKSPACE
-            git config --global --add safe.directory $(pwd)
-            python3 -m venv env
-            source env/bin/activate
-            pip install --upgrade pip requests wheel
-            CFLAGS="-I/usr/include/graphviz" LDFLAGS="-L/usr/lib/graphviz/" pip install pygraphviz
-            pip install leanblueprint
-            leanblueprint pdf
-            mkdir -p docs
-            cp blueprint/print/print.pdf docs/blueprint.pdf
-            leanblueprint web
-            cp -r blueprint/web docs/blueprint
-            printf '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta http-equiv="refresh" content="0; URL=blueprint/">\n  <title>CyclotomicFunctionFields</title>\n</head>\n<body><p>Redirecting to <a href="blueprint/">Blueprint</a></p></body>\n</html>\n' > docs/index.html
-
-      - name: Check declarations
-        run: ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
-
-      - name: Upload pages artifact
-        if: github.ref == 'refs/heads/master'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/
-
-      - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/master'
-        id: deployment
-        uses: actions/deploy-pages@v4
+          blueprint: true
+          references: blueprint/src/references.bib
+          build-page: false
+          deploy: ${{ github.ref == 'refs/heads/master' && 'true' || 'false' }}
 
       - name: Save Lake build cache
         uses: actions/cache/save@v4
