@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - fix/ci-api-docs-failure
   workflow_dispatch:
 
 # Allow one concurrent deployment
@@ -56,24 +55,10 @@ jobs:
             cp blueprint/print/print.pdf docs/blueprint.pdf
             leanblueprint web
             cp -r blueprint/web docs/blueprint
+            printf '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta http-equiv="refresh" content="0; URL=blueprint/">\n  <title>CyclotomicFunctionFields</title>\n</head>\n<body><p>Redirecting to <a href="blueprint/">Blueprint</a></p></body>\n</html>\n' > docs/index.html
 
       - name: Check declarations
         run: ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
-
-      - name: Add root index.html
-        if: github.ref == 'refs/heads/master'
-        run: |
-          cat > docs/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <meta http-equiv="refresh" content="0; URL=blueprint/">
-            <title>CyclotomicFunctionFields</title>
-          </head>
-          <body><p>Redirecting to <a href="blueprint/">Blueprint</a>…</p></body>
-          </html>
-          EOF
 
       - name: Upload pages artifact
         if: github.ref == 'refs/heads/master'
