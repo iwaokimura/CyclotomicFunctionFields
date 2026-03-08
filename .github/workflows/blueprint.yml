@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - fix/ci-api-docs-failure
   workflow_dispatch:
 
 # Allow one concurrent deployment
@@ -40,10 +41,12 @@ jobs:
         uses: leanprover-community/docgen-action@main
         with:
           blueprint: true
+          api-docs: false
           references: blueprint/src/references.bib
           deploy: false
 
       - name: Add root index.html
+        if: github.ref == 'refs/heads/master'
         run: |
           cat > docs/index.html << 'EOF'
           <!DOCTYPE html>
@@ -58,11 +61,13 @@ jobs:
           EOF
 
       - name: Upload pages artifact
+        if: github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/
 
       - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/master'
         id: deployment
         uses: actions/deploy-pages@v4
 
