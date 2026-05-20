@@ -15,7 +15,11 @@ import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.FieldTheory.Separable
 import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Data.Nat.Choose.Lucas
+import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.RingTheory.Polynomial.Basic
+import Mathlib.Algebra.MvPolynomial.Funext
+import Mathlib.RingTheory.MvPolynomial.Homogeneous
+import Mathlib.Data.Finsupp.Weight
 
 
 namespace CyclotomicFunctionFields
@@ -266,9 +270,100 @@ lemma coeff_zero_of_not_q_power {P : Polynomial (Fq q)} (hP : IsAdditive.{0} P)
     -- This requires polynomial in two variables, which Lean encodes as
     -- Polynomial (Polynomial K) for outer variable X and inner variable Y.
 
-    sorry -- Detailed bivariate polynomial manipulation
-    -- Alternative: use MvPolynomial for cleaner multivariate reasoning
-    -- or use formal power series with coefficient extraction
+    -- Strategy: work in MvPolynomial (Fin 2) K and extract the coefficient of X₀^k * X₁^(n-k)
+    -- The monomial m = X₀^k * X₁^(n-k)
+    let m : Fin 2 →₀ ℕ := Finsupp.single 0 k + Finsupp.single 1 (n - k)
+    -- m has total degree n
+    have hm_deg : Finsupp.degree m = n := by
+      simp only [m, AddMonoidHom.map_add, Finsupp.degree_single]; omega
+    -- m is not purely in variable 0 (m 1 = n-k > 0)
+    have hne0 : ∀ i : ℕ, Finsupp.single (0 : Fin 2) i ≠ m := fun i h => by
+      have h1 : (Finsupp.single (0 : Fin 2) i) 1 = m 1 := DFunLike.congr_fun h 1
+      simp [m, Finsupp.add_apply] at h1; omega
+    -- m is not purely in variable 1 (m 0 = k > 0)
+    have hne1 : ∀ i : ℕ, Finsupp.single (1 : Fin 2) i ≠ m := fun i h => by
+      have h0 : (Finsupp.single (1 : Fin 2) i) 0 = m 0 := DFunLike.congr_fun h 0
+      simp [m, Finsupp.add_apply] at h0; omega
+    -- The two bivariate polynomials P(X₀+X₁) and P(X₀)+P(X₁)
+    let lhs_poly := Polynomial.aeval (MvPolynomial.X 0 + MvPolynomial.X 1 : MvPolynomial (Fin 2) K) P
+    let rhs_poly :=
+      Polynomial.aeval (MvPolynomial.X 0 : MvPolynomial (Fin 2) K) P +
+      Polynomial.aeval (MvPolynomial.X 1 : MvPolynomial (Fin 2) K) P
+    -- eval_x commutes with aeval for MvPolynomial (via hom_eval₂)
+    have eval_aeval : ∀ (x : Fin 2 → K) (v : MvPolynomial (Fin 2) K),
+        MvPolynomial.eval x (Polynomial.aeval v P) = Polynomial.aeval (MvPolynomial.eval x v) P := by
+      intro x v
+      simp only [Polynomial.aeval_def, Polynomial.hom_eval₂]
+      congr 1
+      ext c
+      simp [IsScalarTower.algebraMap_apply (Fq q) K (MvPolynomial (Fin 2) K),
+            MvPolynomial.algebraMap_eq, MvPolynomial.eval_C]
+    -- They are equal by MvPolynomial.funext (K is an infinite integral domain)
+    have poly_eq : lhs_poly = rhs_poly := by
+      apply MvPolynomial.funext
+      intro x
+      simp only [lhs_poly, rhs_poly, map_add, eval_aeval, map_add,
+                 MvPolynomial.eval_X]
+      exact (hxy (x 0) (x 1)).symm
+    -- Coefficient of m in rhs is 0 (aeval (Xi) P has no mixed monomials)
+    have rhs_coeff : MvPolynomial.coeff m rhs_poly = 0 := by
+      simp only [rhs_poly, MvPolynomial.coeff_add]
+      have hterm : ∀ (vi : Fin 2) (hvi : ∀ j, Finsupp.single vi j ≠ m),
+          MvPolynomial.coeff m (Polynomial.aeval (MvPolynomial.X vi : MvPolynomial (Fin 2) K) P) = 0 := by
+        intro vi hvi
+        simp only [Polynomial.aeval_eq_sum_range, MvPolynomial.coeff_sum]
+        apply Finset.sum_eq_zero
+        intro j _
+        simp only [Algebra.smul_def, IsScalarTower.algebraMap_apply (Fq q) K (MvPolynomial (Fin 2) K),
+                   MvPolynomial.algebraMap_eq, MvPolynomial.X_pow_eq_monomial,
+                   MvPolynomial.C_mul_monomial, mul_one, MvPolynomial.coeff_monomial,
+                   if_neg (hvi j)]
+      rw [hterm 0 hne0, hterm 1 hne1]; exact add_zero 0
+    -- Natural number cast in MvPolynomial (Fin 2) K equals C of the cast in K
+    have hcast : ∀ j : ℕ, (j : MvPolynomial (Fin 2) K) = MvPolynomial.C ((j : K)) := fun j => by
+      rw [← MvPolynomial.algebraMap_eq]
+      exact (map_natCast (algebraMap K (MvPolynomial (Fin 2) K)) j).symm
+    -- Coefficient of (X₀+X₁)^n at m equals C(n,k)
+    have coeff_pow_n : MvPolynomial.coeff m
+        ((MvPolynomial.X 0 + MvPolynomial.X 1 : MvPolynomial (Fin 2) K) ^ n) = (n.choose k : K) := by
+      rw [add_pow]
+      -- Expand the binomial sum and distribute coeff m
+      simp only [MvPolynomial.coeff_sum, MvPolynomial.X_pow_eq_monomial, MvPolynomial.monomial_mul]
+      -- Convert nat casts to C, normalize C*monomial, extract coefficients
+      simp only [hcast, mul_comm _ (MvPolynomial.C _), MvPolynomial.C_mul_monomial,
+                 mul_one, MvPolynomial.coeff_monomial]
+      -- The sum Σ_j (if single 0 j + single 1 (n-j) = m then C(n,j) else 0) = C(n,k)
+      rw [Finset.sum_eq_single k
+        (fun j _ hjk => by
+          simp only [ite_eq_right_iff]
+          intro heq
+          have := DFunLike.congr_fun heq (0 : Fin 2)
+          simp [m, Finsupp.add_apply] at this
+          omega)
+        (fun h => absurd (Finset.mem_range.mpr (Nat.lt_succ_of_lt hk_lt)) h)]
+      exact if_pos rfl
+    -- Coefficient of m in lhs equals coeff_K * C(n,k) (via homogeneity + binomial theorem)
+    have lhs_coeff : MvPolynomial.coeff m lhs_poly = coeff_K * (n.choose k : K) := by
+      simp only [lhs_poly, Polynomial.aeval_eq_sum_range, MvPolynomial.coeff_sum,
+                 Algebra.smul_def, IsScalarTower.algebraMap_apply (Fq q) K (MvPolynomial (Fin 2) K),
+                 MvPolynomial.algebraMap_eq, MvPolynomial.coeff_C_mul]
+      have hX0X1_hom : ∀ i : ℕ, MvPolynomial.IsHomogeneous
+          ((MvPolynomial.X 0 + MvPolynomial.X 1 : MvPolynomial (Fin 2) K) ^ i) i :=
+        fun i => by simpa only [one_mul] using
+          ((MvPolynomial.isHomogeneous_X K 0).add (MvPolynomial.isHomogeneous_X K 1)).pow i
+      rw [Finset.sum_eq_single n
+        (fun i _ hin => by
+          have := (hX0X1_hom i).coeff_eq_zero (show Finsupp.degree m ≠ i by rw [hm_deg]; exact Ne.symm hin)
+          simp [this])
+        (fun hn_not => by
+          simp only [Finset.mem_range, not_lt] at hn_not
+          have hcn : P.coeff n = 0 := Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+          simp only [hcn, map_zero]; exact zero_mul _)]
+      rw [coeff_pow_n]; rfl
+    -- Extract the coefficient from poly_eq to conclude
+    have h := congr_arg (MvPolynomial.coeff m) poly_eq
+    rw [lhs_coeff, rhs_coeff] at h
+    exact h
 
   -- Step 4: Conclude P.coeff n = 0
   have coeff_K_zero : coeff_K = 0 := by
