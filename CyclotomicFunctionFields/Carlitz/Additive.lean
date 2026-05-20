@@ -437,28 +437,24 @@ end CyclotomicFunctionFields
 
 ---
 
-### ❌ Remaining `sorry`: `key` in `coeff_zero_of_not_q_power`
+### ✅ Resolved: `key` in `coeff_zero_of_not_q_power` (commit c67c92f)
 
-   - **Goal**: `coeff_K * (n.choose k : K) = 0`, i.e.,
-     derive `(P.coeff n) * C(n,k) = 0` from
-     `∀ x y : K, P(x) + P(y) = P(x+y)` with `0 < k < n`
-   - **Strategy**: Lift the pointwise identity to a polynomial identity in `K[X,Y]`
-     (valid since K is infinite), then compare coefficients of `X^k · Y^(n-k)`:
-     - In `P(X+Y)` via binomial theorem: coefficient is `(P.coeff n) * C(n,k)`
-     - In `P(X) + P(Y)`: coefficient is 0 (since 0 < k < n means neither pure X nor pure Y term)
-   - **Recommended approach**: Use `MvPolynomial (Fin 2) K` with
-     `MvPolynomial.funext` (polynomial equality from pointwise equality over
-     an infinite ring), then extract the `Finsupp.single` coefficient.
-   - **Note**: Once `key` is proved, `coeff_zero_of_not_q_power` is fully closed
-     (Steps 4 and the final `algebraMap` injectivity are already proved).
+   - **Goal**: `coeff_K * (n.choose k : K) = 0`
+   - **Proof**: Work in `MvPolynomial (Fin 2) K`.
+     Define `lhs_poly = P(X₀+X₁)` and `rhs_poly = P(X₀)+P(X₁)`.
+     Use `MvPolynomial.funext` (K infinite integral domain) to show they are equal.
+     Extract coefficient of `X₀^k · X₁^(n-k)`:
+     - LHS via `add_pow` + homogeneity: `coeff_K * C(n,k)`
+     - RHS (no mixed monomials): `0`
+     Conclude `coeff_K * C(n,k) = 0`; since `C(n,k) ≠ 0`, get `coeff_K = 0`.
 
 ---
 
 ### ❌ Remaining `sorry`: `structure_theorem`
    - **Goal**: Every additive polynomial is `Σᵢ aᵢ · x^(qⁱ)`
-   - **Strategy**: `support_subset_q_powers` (already proved via
-     `coeff_zero_of_not_q_power`) shows every nonzero coefficient index is a q-power.
+   - **Strategy**: `support_subset_q_powers` (proved via `coeff_zero_of_not_q_power`)
+     shows every nonzero coefficient index is a q-power.
      Use `Polynomial.as_sum_support` to decompose P as `Σ_{n ∈ P.support} P.coeff n • X^n`,
      then reindex over q-power exponents.
-   - **Status**: Unblocked once `key` is resolved.
+   - **Status**: Unblocked (coeff_zero_of_not_q_power is now proved).
 -/
